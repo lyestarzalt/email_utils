@@ -43,7 +43,7 @@ class Email:
     def search_email(self) -> bool:
         # function that get the attachment from the email based on the subject
         # and return the attachment as bytes object.
-        with MailBox(host).login(self.address, self.password, Gmailfolders.ALL.value) as mailbox:
+        with MailBox(self.host).login(self.address, self.password, Gmailfolders.ALL.value) as mailbox:
             emails = mailbox.fetch(AND(subject=self.subject))
             for msg in emails:
                 for att in msg.attachments:
