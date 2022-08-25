@@ -145,7 +145,8 @@ class Email:
         return self.attachment_dataframe
     
 
-    def send_email(self,smtp_host,port,recipient_address: str, subject:str, body_as_html: str, file_path:str):
+    def send_email(self,smtp_host: str ,port: int,recipient_address: str, subject:str, body_as_html: str, file_path:str) -> None:
+
         """Send email with and attachment. 
         body of the email MUST consist of html 
         eg:
