@@ -64,7 +64,7 @@ class Email:
                 return False
 
     def catch_email(self, wait_time_hours: int = 1):
-        """_summary_
+        """
         function to catch an email and download the attachment
         as soon as it arrives.
         How: IMAP idle (https://www.rfc-editor.org/rfc/rfc2177)
@@ -131,7 +131,6 @@ class Email:
 
     def get_dataframe(self, sheet: str = None) -> pd.DataFrame:
         """convert the bytes object to pandas dataframe and return the dataframe
-
         args:
         sheet (string): sheet name of the excel file
         if no sheet selected it will return the first sheet
@@ -146,7 +145,6 @@ class Email:
     
 
     def send_email(self,smtp_host: str ,port: int,recipient_address: str, subject:str, body_as_html: str, file_path:str) -> None:
-
         """Send email with and attachment. 
         body of the email MUST consist of html 
         eg:
@@ -198,10 +196,6 @@ class Email:
         except smtplib.SMTPServerDisconnected:
             print('Error sending import stats Email : SMTP Server Disconnected')
         smtp.quit()
-
-
-            
-
 
 if __name__ == "__main__":
     # EXAMPLE HOW TO USE THE CLASS
