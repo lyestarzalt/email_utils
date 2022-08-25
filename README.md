@@ -1,2 +1,2 @@
 # email_utils
-helpful email utilities to find/catch emails and download their attachment 
+A helpful email class utility to find/catch and send emails with attachment.
