@@ -8,8 +8,16 @@ import time
 import traceback
 import os
 from pathlib import Path
+import smtplib
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
+# ------------------------------------------------------------------------------------------------ #
+#This is mostly for handling emails with attachment. Search, await and send email with attachments #
+# -------------------------------------------------------------------------------------------------#
 class Gmailfolders(Enum):
     INBOX = 'INBOX'
     SENT = '[Gmail]/Sent Mail'
@@ -28,8 +36,8 @@ class Email:
         subject_email_find (str): subject of the email, that we want to download
     """
 
-    def __init__(self, host_address: str, email_address: str, email_password: str, subject_email_find: str) -> None:
-        self.host: str = host_address
+    def __init__(self, imap_address: str, email_address: str, email_password: str, subject_email_find: str = None) -> None:
+        self.imap: str = imap_address
         self.address: str = email_address
         self.password: str = email_password
         self.subject: str = subject_email_find
@@ -43,7 +51,7 @@ class Email:
     def search_email(self) -> bool:
         # function that get the attachment from the email based on the subject
         # and return the attachment as bytes object.
-        with MailBox(self.host).login(self.address, self.password, Gmailfolders.ALL.value) as mailbox:
+        with MailBox(self.imap).login(self.address, self.password, Gmailfolders.ALL.value) as mailbox:
             emails = mailbox.fetch(AND(subject=self.subject))
             for msg in emails:
                 for att in msg.attachments:
@@ -72,7 +80,7 @@ class Email:
         connection_current_time: float = 0.0
         done: bool = False
         try:
-            with MailBox(self.host).login(self.address, self.password, Gmailfolders.ALL.value) as mailbox:
+            with MailBox(self.imap).login(self.address, self.password, Gmailfolders.ALL.value) as mailbox:
                 print('@@ New connection', time.asctime())
                 while connection_current_time < wait_time_hours * 60 * 60:
 
@@ -135,6 +143,63 @@ class Email:
             self.attachment_dataframe = pd.DataFrame()
 
         return self.attachment_dataframe
+    
+
+    def send_email(self,smtp_host,port,recipient_address: str, subject:str, body_as_html: str, file_path:str):
+        """Send email with and attachment. 
+        body of the email MUST consist of html 
+        eg:
+        
+        html = \
+            <html>
+            <head></head>
+            <body>
+                <p>Hi!<br>
+                How are you?<br>
+                Here is the <a href="http://www.python.org">link</a> you wanted.
+                </p>
+            </body>
+            </html>
+        
+        Args:
+            recipient_address (str): email address of the reciver 
+            subject (str): subject of the email.
+            body_as_html (str): html code of the body.
+            file_path (str): full path of name of the attachment file.
+        """
+        html = body_as_html
+        msg = MIMEMultipart()
+        msg['From'] = self.address
+        msg['To'] = recipient_address
+        msg['Subject'] = subject
+        #
+        msg.attach(MIMEText(html, 'html'))
+        fp = open(file_path, 'rb')
+        part = MIMEBase('application', 'vnd.ms-excel')
+        part.set_payload(fp.read())
+        fp.close()
+        encoders.encode_base64(part)
+        # attach the file to the email
+        part.add_header('Content-Disposition', 'attachment', filename=file_path)
+        msg.attach(part)
+        smtp = smtplib.SMTP(host=smtp_host, port=port)
+        smtp.ehlo()
+        smtp.starttls()
+
+        try:
+            smtp.login(self.address, self.password)
+            smtp.sendmail(self.address, recipient_address, msg.as_string())
+
+        except smtplib.SMTPAuthenticationError:
+            print('Error sending import stats Email: Authentication Error')
+        except smtplib.SMTPConnectError:
+            print('Error sending import stats Email : SMTP Connect Error')
+        except smtplib.SMTPServerDisconnected:
+            print('Error sending import stats Email : SMTP Server Disconnected')
+        smtp.quit()
+
+
+            
 
 
 if __name__ == "__main__":
@@ -142,8 +207,7 @@ if __name__ == "__main__":
     host = "imap.gmail.com"
     emailAddr = "xxxx@gmail.com "
     password = 'generate one at https://support.google.com/accounts/answer/185833?hl=en' 
- 
-    email = Email(host_address=host, email_address=emailAddr, email_password=password,
+    email = Email(imap_address=host, email_address=emailAddr, email_password=password,
                   subject_email_find='sales number for 20/08/2022')
     email.search_email()
     print(email.file_name)
